@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from flask import Blueprint
 from pymongo import UpdateOne
 from pymongo.database import Database
@@ -31,6 +33,22 @@ def aplicar_seed(db: Database) -> None:
             for sku, livro in SEED.items()
         ]
     )
+
+
+def devolver_unidades(itens: list[dict]) -> None:
+    for item in itens:
+        banco().livros.update_one(
+            {"_id": item["sku"]}, {"$inc": {"disponivel": item["quantidade"]}}
+        )
+
+
+@rotas.before_request
+def liberar_reservas_vencidas() -> None:
+    while reserva := banco().reservas.find_one_and_update(
+        {"status": "ativa", "expira_em": {"$lte": datetime.now(UTC)}},
+        {"$set": {"status": "expirada"}},
+    ):
+        devolver_unidades(reserva["itens"])
 
 
 @rotas.get("/v1/livros")

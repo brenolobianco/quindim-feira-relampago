@@ -4,13 +4,14 @@ from flask import Blueprint, current_app
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from feira.banco import banco, buscar_por_id
-from feira.catalogo import SEED
+from feira.catalogo import SEED, devolver_unidades, liberar_reservas_vencidas
 from feira.erros import ErroApi, validar_corpo
 from feira.modelos import Reserva
 
 MAXIMO_POR_SKU = 3
 
 rotas = Blueprint("reservas", __name__)
+rotas.before_request(liberar_reservas_vencidas)
 
 
 class ItemSolicitado(BaseModel):
@@ -72,13 +73,6 @@ def separar_unidades(itens: list[ItemSolicitado]) -> list[dict]:
             {"skus": sem_estoque},
         )
     return separados
-
-
-def devolver_unidades(itens: list[dict]) -> None:
-    for item in itens:
-        banco().livros.update_one(
-            {"_id": item["sku"]}, {"$inc": {"disponivel": item["quantidade"]}}
-        )
 
 
 @rotas.post("/v1/reservas")
