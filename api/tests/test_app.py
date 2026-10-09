@@ -1,4 +1,4 @@
-from feira.app import create_app
+from pymongo import MongoClient
 
 
 def test_healthz_responde_ok_quando_fala_com_o_mongo(cliente):
@@ -8,10 +8,11 @@ def test_healthz_responde_ok_quando_fala_com_o_mongo(cliente):
     assert resposta.get_json() == {"status": "ok"}
 
 
-def test_healthz_responde_503_quando_o_mongo_esta_fora():
-    cliente = create_app(MONGO_URL="mongodb://127.0.0.1:1").test_client()
+def test_healthz_responde_503_quando_o_mongo_esta_fora(app):
+    mongo_fora = MongoClient("mongodb://127.0.0.1:1", serverSelectionTimeoutMS=200)
+    app.extensions["banco"] = mongo_fora["feira"]
 
-    resposta = cliente.get("/healthz")
+    resposta = app.test_client().get("/healthz")
 
     assert resposta.status_code == 503
     assert resposta.get_json()["erro"]["codigo"] == "banco_indisponivel"

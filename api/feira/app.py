@@ -3,6 +3,7 @@ import os
 from flask import Flask
 from pymongo.errors import PyMongoError
 
+from feira import catalogo
 from feira.banco import banco, conectar
 from feira.erros import ErroApi, registrar_tratadores
 
@@ -15,8 +16,10 @@ def create_app(**config) -> Flask:
     )
     app.config.update(config)
     conectar(app)
+    catalogo.aplicar_seed(app.extensions["banco"])
     registrar_tratadores(app)
     app.add_url_rule("/healthz", view_func=healthz)
+    app.register_blueprint(catalogo.rotas)
     return app
 
 
