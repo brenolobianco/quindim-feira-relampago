@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from pymongo.errors import PyMongoError
 
-from feira import catalogo
+from feira import admin, catalogo
 from feira.banco import banco, conectar
 from feira.erros import ErroApi, registrar_tratadores
 
@@ -13,6 +13,7 @@ def create_app(**config) -> Flask:
     app.config.update(
         MONGO_URL=os.environ.get("MONGO_URL", "mongodb://localhost:27017"),
         MONGO_BANCO=os.environ.get("MONGO_BANCO", "feira"),
+        ADMIN_TOKEN=os.environ.get("ADMIN_TOKEN", ""),
     )
     app.config.update(config)
     conectar(app)
@@ -20,6 +21,7 @@ def create_app(**config) -> Flask:
     registrar_tratadores(app)
     app.add_url_rule("/healthz", view_func=healthz)
     app.register_blueprint(catalogo.rotas)
+    app.register_blueprint(admin.rotas)
     return app
 
 
