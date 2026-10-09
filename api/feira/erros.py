@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
-from flask import Flask, current_app, jsonify
+from flask import Flask, current_app, jsonify, request
+from pydantic import BaseModel, ValidationError
 from werkzeug.exceptions import HTTPException
 
 ERROS_HTTP = {
@@ -17,6 +18,19 @@ class ErroApi(Exception):
     codigo: str
     mensagem: str
     detalhes: dict = field(default_factory=dict)
+
+
+def validar_corpo[M: BaseModel](modelo: type[M]) -> M:
+    try:
+        return modelo.model_validate(request.get_json(silent=True))
+    except ValidationError as erro:
+        campos = [
+            {"campo": ".".join(str(parte) for parte in falha["loc"]), "mensagem": falha["msg"]}
+            for falha in erro.errors()
+        ]
+        raise ErroApi(
+            400, "requisicao_invalida", "Corpo fora do contrato.", {"campos": campos}
+        ) from erro
 
 
 def resposta_de_erro(status: int, codigo: str, mensagem: str, detalhes: dict | None = None):
