@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from flask import Blueprint, current_app
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from feira.banco import banco
+from feira.banco import banco, buscar_por_id
 from feira.catalogo import SEED
 from feira.erros import ErroApi, validar_corpo
 from feira.modelos import Reserva
@@ -95,3 +95,8 @@ def criar_reserva():
     }
     banco().reservas.insert_one(reserva)
     return Reserva.model_validate(reserva).model_dump(), 201
+
+
+@rotas.get("/v1/reservas/<reserva_id>")
+def consultar_reserva(reserva_id: str):
+    return Reserva.model_validate(buscar_por_id(banco().reservas, reserva_id)).model_dump()

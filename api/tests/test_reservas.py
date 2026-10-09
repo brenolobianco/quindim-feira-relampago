@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timedelta
 
+import pytest
 from bson import ObjectId
 
 DATA_ISO_UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
@@ -99,3 +100,22 @@ def test_corpo_invalido_responde_400_sem_tocar_no_estoque(cliente, banco):
     assert resposta.status_code == 400
     assert resposta.get_json()["erro"]["codigo"] == "requisicao_invalida"
     assert disponiveis(banco) == antes
+
+
+def test_consulta_devolve_a_reserva_no_mesmo_formato_da_criacao(cliente):
+    criada = reservar(cliente, ("QND-001", 2), ("QND-003", 1)).get_json()
+
+    resposta = cliente.get(f"/v1/reservas/{criada['id']}")
+
+    assert resposta.status_code == 200
+    assert resposta.get_json() == criada
+
+
+@pytest.mark.parametrize(
+    "reserva_id", [str(ObjectId()), "abc", "66f0c1d2e4b0a1b2c3d4e5fZ", "1" * 12]
+)
+def test_consulta_de_reserva_inexistente_ou_id_malformado_responde_404(cliente, reserva_id):
+    resposta = cliente.get(f"/v1/reservas/{reserva_id}")
+
+    assert resposta.status_code == 404
+    assert resposta.get_json()["erro"]["codigo"] == "nao_encontrado"
