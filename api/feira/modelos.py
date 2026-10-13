@@ -30,3 +30,22 @@ class Reserva(BaseModel):
     itens: list[ItemReservado]
     criado_em: DataUTC
     expira_em: DataUTC
+
+
+class LinhaDoPedido(ItemReservado):
+    valor_centavos: int
+    desconto_centavos: int
+    liquido_centavos: int
+
+
+class Pedido(BaseModel):
+    id: IdMongo = Field(validation_alias="_id")
+    reserva_id: IdMongo
+    cliente_id: str
+    status: str
+    linhas: list[LinhaDoPedido]
+    subtotal_centavos: int
+    desconto_centavos: int
+    total_centavos: int
+    criado_em: DataUTC
+    pago_em: DataUTC | None

@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from pymongo.errors import PyMongoError
 
-from feira import admin, catalogo, reservas
+from feira import admin, catalogo, pedidos, reservas
 from feira.banco import banco, conectar
 from feira.erros import ErroApi, registrar_tratadores
 
@@ -19,11 +19,13 @@ def create_app(**config) -> Flask:
     app.config.update(config)
     conectar(app)
     catalogo.aplicar_seed(app.extensions["banco"])
+    pedidos.criar_indices(app.extensions["banco"])
     registrar_tratadores(app)
     app.add_url_rule("/healthz", view_func=healthz)
     app.register_blueprint(catalogo.rotas)
     app.register_blueprint(admin.rotas)
     app.register_blueprint(reservas.rotas)
+    app.register_blueprint(pedidos.rotas)
     return app
 
 
