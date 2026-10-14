@@ -124,3 +124,19 @@ def test_confirmar_reserva_inexistente_ou_id_malformado_responde_404(cliente, re
 
     assert resposta.status_code == 404
     assert resposta.get_json()["erro"]["codigo"] == "nao_encontrado"
+
+
+def test_consultar_pedido_devolve_o_mesmo_formato_da_confirmacao(cliente):
+    pedido = confirmar(cliente, reservar(cliente, ("QND-001", 3))).get_json()
+
+    resposta = cliente.get(f"/v1/pedidos/{pedido['id']}")
+
+    assert (resposta.status_code, resposta.get_json()) == (200, pedido)
+
+
+@pytest.mark.parametrize("pedido_id", ["66f0c1d2e4b0a1b2c3d4e5f6", "nao-e-um-id"])
+def test_consultar_pedido_inexistente_ou_id_malformado_responde_404(cliente, pedido_id):
+    resposta = cliente.get(f"/v1/pedidos/{pedido_id}")
+
+    assert resposta.status_code == 404
+    assert resposta.get_json()["erro"]["codigo"] == "nao_encontrado"

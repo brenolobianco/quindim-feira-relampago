@@ -91,3 +91,8 @@ def confirmar_reserva(reserva_id: str):
         return_document=ReturnDocument.AFTER,
     )
     return Pedido.model_validate(pedido).model_dump(), 201 if confirmou_agora else 200
+
+
+@rotas.get("/v1/pedidos/<pedido_id>")
+def consultar_pedido(pedido_id: str):
+    return Pedido.model_validate(buscar_por_id(banco().pedidos, pedido_id)).model_dump()
