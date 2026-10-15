@@ -1,0 +1,30 @@
+# Feira Relâmpago
+
+API da feira relâmpago de livros: catálogo, reserva com expiração, confirmação com desconto e webhook de pagamento. Python 3.12, Flask, MongoDB (pymongo) e Pydantic.
+
+## Como rodar
+
+Precisa de Docker.
+
+```
+cp .env.example .env
+docker compose up --build
+```
+
+A API sobe em http://localhost:8000 com o seed aplicado. Para conferir: `curl http://localhost:8000/healthz`.
+
+O frontend não foi feito (ver `NOTAS.md`).
+
+## Como testar
+
+Os testes rodam contra um MongoDB de verdade em `localhost:27017`. O jeito mais fácil é subir só o Mongo do Compose:
+
+```
+docker compose up -d mongo
+cd api
+uv run pytest
+```
+
+Os testes usam o banco `feira_teste` e apagam esse banco a cada teste. O teste de concorrência (`tests/test_concorrencia.py`) sobe processos de verdade disputando o mesmo estoque.
+
+Lint: `uv run ruff check` e `uv run ruff format --check`, dentro de `api/`.
