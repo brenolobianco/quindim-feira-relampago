@@ -10,7 +10,7 @@
 
 **Desconto e rateio.** Tudo em centavos inteiros. Arredondamento comercial com `(valor * pct + 50) // 100`, sem `float` nem `round()` (que arredonda meio para o par). O rateio usa `divmod` para a parte inteira e distribui a sobra pelo maior resto; o `sorted` é estável, então no empate ganha a primeira linha.
 
-**Webhook.** HMAC-SHA256 sobre o corpo bruto (`request.get_data()`), comparado com `hmac.compare_digest`. Sem `WEBHOOK_SEGREDO` configurado, toda assinatura é recusada. O evento é gravado com `_id = evento_id`, então um evento repetido dá chave duplicada e não é aplicado. As transições só acontecem a partir de `aguardando_pagamento`, o que deixa `pago` e `cancelado` finais. Na recusa, só quem fez a transição devolve as unidades.
+**Webhook.** HMAC-SHA256 sobre o corpo bruto (`request.get_data()`), comparado com `hmac.compare_digest`, aceitando o hexadecimal em maiúsculas ou minúsculas. O corpo é validado a partir desses mesmos bytes (`model_validate_json`), então não depende do cabeçalho `Content-Type`. Sem `WEBHOOK_SEGREDO` configurado, toda assinatura é recusada. O evento é gravado com `_id = evento_id`, então um evento repetido dá chave duplicada e não é aplicado. As transições só acontecem a partir de `aguardando_pagamento`, o que deixa `pago` e `cancelado` finais. Na recusa, só quem fez a transição devolve as unidades.
 
 **Ambiguidades da especificação e o que escolhi:**
 
@@ -25,6 +25,10 @@
 
 - Se o processo cair entre gravar o evento do webhook e aplicá-lo, a reenviada do provedor é vista como duplicada e o evento se perde (o pedido fica em `aguardando_pagamento`). A alternativa seria aplicar antes de gravar, já que as transições condicionais são idempotentes.
 - Se o processo cair no meio de uma reserva, depois de separar alguns SKUs e antes da compensação, essas unidades ficam presas. Sem transação, não há como evitar sem um processo de reconciliação.
+- Pelo mesmo motivo, se o processo cair entre marcar a reserva como `expirada` e devolver as unidades, ou entre cancelar o pedido recusado e devolver as unidades, elas ficam presas: a transição já aconteceu e ninguém mais vai devolver.
+- Enquanto a compensação de uma reserva que falhou não termina, o `disponivel` dos SKUs já separados fica reduzido por um instante. Outra reserva nesse intervalo pode receber 409 mesmo havendo unidades.
+- Se o processo cair depois de marcar a reserva como `confirmada` e antes de gravar o pedido, a próxima chamada cria o pedido mas responde 200, não 201.
+- O compose publica o Mongo na porta 27017 da máquina, para os testes rodarem contra `localhost:27017`. Se já houver um MongoDB nessa porta, o `docker compose up` falha com "port is already allocated".
 - O teste de concorrência da confirmação é probabilístico: sem o índice único ele às vezes passa, porque depende de as requisições realmente baterem ao mesmo tempo.
 - A expiração preguiçosa só roda quando chega uma requisição. Sem tráfego, a reserva continua `ativa` no banco depois do prazo (mas não pode mais ser confirmada).
 - O `web/.npmrc` liga `legacy-peer-deps`. Sem isso, o npm 10 quebrava ao resolver as dependências do Nuxt UI (`Cannot read properties of null (reading 'edgesOut')`).
