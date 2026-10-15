@@ -81,3 +81,11 @@ def test_recusa_corpo_que_nao_e_json():
 
 def test_recusa_corpo_json_que_nao_e_objeto():
     assert campos_com_erro([1, 2, 3]) == [""]
+
+
+def test_aceita_json_sem_o_cabecalho_content_type():
+    corpo = b'{"cliente_id":"c","itens":[{"sku":"QND-001","quantidade":1}]}'
+    with Flask(__name__).test_request_context(method="POST", data=corpo):
+        reserva = validar_corpo(NovaReserva)
+
+    assert reserva.itens[0].sku == "QND-001"

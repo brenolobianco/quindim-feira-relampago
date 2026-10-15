@@ -137,3 +137,13 @@ def test_evento_de_pedido_inexistente_responde_200(cliente, pedido_id):
     resposta = notificar(cliente, "evt_1", pedido_id, "pago")
 
     assert (resposta.status_code, resposta.get_json()) == (200, {"recebido": True})
+
+
+def test_vetor_do_contrato_sem_content_type_tambem_e_aceito(cliente):
+    resposta = cliente.post(
+        "/v1/webhooks/pagamento",
+        data=CORPO_DO_EXEMPLO,
+        headers={"X-Assinatura": ASSINATURA_DO_EXEMPLO},
+    )
+
+    assert (resposta.status_code, resposta.get_json()) == (200, {"recebido": True})

@@ -22,7 +22,7 @@ class ErroApi(Exception):
 
 def validar_corpo[M: BaseModel](modelo: type[M]) -> M:
     try:
-        return modelo.model_validate(request.get_json(silent=True))
+        return modelo.model_validate_json(request.get_data())
     except ValidationError as erro:
         campos = [
             {"campo": ".".join(str(parte) for parte in falha["loc"]), "mensagem": falha["msg"]}
