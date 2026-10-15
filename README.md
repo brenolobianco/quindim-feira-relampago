@@ -13,7 +13,17 @@ docker compose up --build
 
 A API sobe em http://localhost:8000 com o seed aplicado. Para conferir: `curl http://localhost:8000/healthz`.
 
-O frontend não foi feito (ver `NOTAS.md`).
+## Frontend
+
+A tela em Nuxt roda fora do Compose (ver `NOTAS.md`). Com a API no ar, precisa de Node 22:
+
+```
+cd web
+npm install
+npm run dev
+```
+
+Abre em http://localhost:3000. A URL da API fica só no servidor do Nuxt (`NUXT_API_URL`, padrão `http://localhost:8000`).
 
 ## Como testar
 
