@@ -28,7 +28,6 @@
 - O teste de concorrência da confirmação é probabilístico: sem o índice único ele às vezes passa, porque depende de as requisições realmente baterem ao mesmo tempo.
 - A expiração preguiçosa só roda quando chega uma requisição. Sem tráfego, a reserva continua `ativa` no banco depois do prazo (mas não pode mais ser confirmada).
 - O `web/.npmrc` liga `legacy-peer-deps`. Sem isso, o npm 10 quebrava ao resolver as dependências do Nuxt UI (`Cannot read properties of null (reading 'edgesOut')`).
-- Não consegui validar o `docker compose up --build` a partir de um clone novo, porque a máquina em que desenvolvi não tinha Docker. Rodei a API e os testes com um `mongod` local.
 
 ## Diário
 
