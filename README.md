@@ -11,11 +11,11 @@ cp .env.example .env
 docker compose up --build
 ```
 
-A API sobe em http://localhost:8000 com o seed aplicado. Para conferir: `curl http://localhost:8000/healthz`.
+A tela sobe em http://localhost:3000 e a API em http://localhost:8000, com o seed aplicado. Para conferir a API: `curl http://localhost:8000/healthz`.
 
-## Frontend
+## Frontend em modo de desenvolvimento
 
-A tela em Nuxt roda fora do Compose (ver `NOTAS.md`). Com a API no ar, precisa de Node 22:
+Com a API no ar, precisa de Node 22:
 
 ```
 cd web
