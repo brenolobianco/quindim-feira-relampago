@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from pymongo.errors import PyMongoError
 
-from feira import admin, catalogo, pedidos, reservas
+from feira import admin, catalogo, pedidos, reservas, webhooks
 from feira.banco import banco, conectar
 from feira.erros import ErroApi, registrar_tratadores
 
@@ -14,6 +14,7 @@ def create_app(**config) -> Flask:
         MONGO_URL=os.environ.get("MONGO_URL", "mongodb://localhost:27017"),
         MONGO_BANCO=os.environ.get("MONGO_BANCO", "feira"),
         ADMIN_TOKEN=os.environ.get("ADMIN_TOKEN", ""),
+        WEBHOOK_SEGREDO=os.environ.get("WEBHOOK_SEGREDO", ""),
         RESERVA_TTL_SEGUNDOS=int(os.environ.get("RESERVA_TTL_SEGUNDOS", "900")),
     )
     app.config.update(config)
@@ -26,6 +27,7 @@ def create_app(**config) -> Flask:
     app.register_blueprint(admin.rotas)
     app.register_blueprint(reservas.rotas)
     app.register_blueprint(pedidos.rotas)
+    app.register_blueprint(webhooks.rotas)
     return app
 
 
