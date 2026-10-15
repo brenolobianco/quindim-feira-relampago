@@ -31,3 +31,21 @@
 - Não consegui validar o `docker compose up --build` a partir de um clone novo, porque a máquina em que desenvolvi não tinha Docker. Rodei a API e os testes com um `mongod` local.
 
 ## Diário
+
+### 08/10 — dia 1
+- Máquina sem Docker nem Python: instalei o uv e rodei um mongod portátil.
+- App Flask com Mongo, erro padrão, catálogo com seed, reset do admin, validação da reserva com Pydantic e reserva com baixa atômica.
+- Descobri que o `find_one_and_update` com filtro (`disponivel >= qtd`) checa e baixa o estoque numa operação só, sem brecha para duas pessoas levarem a última unidade.
+
+### 09/10 — dia 2
+- Teste da RN-04 com processos concorrentes de verdade, consulta de reserva e expiração preguiçosa.
+- Descobri que o índice TTL do Mongo só apaga a cada ~60 s, então não serve para expirar a reserva na hora.
+
+### 13/10 — dia 3
+- Desconto da RN-07, rateio da RN-08 e confirmação gerando um único pedido.
+
+### 14/10 — dia 4
+- Teste de concorrência da confirmação e consulta de pedido.
+
+### 15/10 — dia 5
+- Webhook de pagamento, README e NOTAS. O frontend ficou de fora por tempo.
