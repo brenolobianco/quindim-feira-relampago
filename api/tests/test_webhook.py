@@ -63,3 +63,77 @@ def test_corpo_assinado_fora_do_contrato_responde_400(cliente):
 
     assert resposta.status_code == 400
     assert resposta.get_json()["erro"]["codigo"] == "requisicao_invalida"
+
+
+@pytest.fixture
+def pedido_id(cliente) -> str:
+    corpo = {"cliente_id": "cli_123", "itens": [{"sku": "QND-005", "quantidade": 1}]}
+    reserva_id = cliente.post("/v1/reservas", json=corpo).get_json()["id"]
+    return cliente.post(f"/v1/reservas/{reserva_id}/confirmar").get_json()["id"]
+
+
+def notificar(cliente, evento_id: str, pedido_id: str, tipo: str):
+    corpo = (
+        f'{{"evento_id":"{evento_id}","pedido_id":"{pedido_id}",'
+        f'"tipo":"{tipo}","ocorrido_em":"2026-10-01T12:00:00Z"}}'
+    ).encode()
+    return enviar(cliente, corpo, assinar(corpo))
+
+
+def consultar(cliente, pedido_id: str) -> dict:
+    return cliente.get(f"/v1/pedidos/{pedido_id}").get_json()
+
+
+def disponivel(banco) -> int:
+    return banco.livros.find_one({"_id": "QND-005"})["disponivel"]
+
+
+def test_pago_leva_o_pedido_a_pago_com_a_data_do_evento(cliente, banco, pedido_id):
+    resposta = notificar(cliente, "evt_1", pedido_id, "pago")
+
+    assert (resposta.status_code, resposta.get_json()) == (200, {"recebido": True})
+    pedido = consultar(cliente, pedido_id)
+    assert (pedido["status"], pedido["pago_em"]) == ("pago", "2026-10-01T12:00:00Z")
+    assert disponivel(banco) == 0
+
+
+def test_recusas_repetidas_cancelam_e_devolvem_as_unidades_uma_vez(cliente, banco, pedido_id):
+    respostas = [notificar(cliente, f"evt_{n}", pedido_id, "recusado") for n in range(3)]
+
+    assert [resposta.status_code for resposta in respostas] == [200, 200, 200]
+    assert consultar(cliente, pedido_id)["status"] == "cancelado"
+    assert disponivel(banco) == 1
+
+
+@pytest.mark.parametrize(
+    "primeiro, depois, status_final",
+    [("pago", "recusado", "pago"), ("recusado", "pago", "cancelado")],
+)
+def test_status_final_nao_muda_com_eventos_fora_de_ordem(
+    cliente, banco, pedido_id, primeiro, depois, status_final
+):
+    notificar(cliente, "evt_1", pedido_id, primeiro)
+
+    resposta = notificar(cliente, "evt_2", pedido_id, depois)
+
+    assert resposta.status_code == 200
+    pedido = consultar(cliente, pedido_id)
+    assert pedido["status"] == status_final
+    assert disponivel(banco) == (1 if status_final == "cancelado" else 0)
+
+
+def test_mesmo_evento_id_nao_e_aplicado_duas_vezes(cliente, banco, pedido_id):
+    notificar(cliente, "evt_1", "66f0c2a1e4b0a1b2c3d4e5f7", "recusado")
+
+    resposta = notificar(cliente, "evt_1", pedido_id, "recusado")
+
+    assert resposta.status_code == 200
+    assert consultar(cliente, pedido_id)["status"] == "aguardando_pagamento"
+    assert banco.eventos.count_documents({}) == 1
+
+
+@pytest.mark.parametrize("pedido_id", ["66f0c2a1e4b0a1b2c3d4e5f7", "nao-e-um-id"])
+def test_evento_de_pedido_inexistente_responde_200(cliente, pedido_id):
+    resposta = notificar(cliente, "evt_1", pedido_id, "pago")
+
+    assert (resposta.status_code, resposta.get_json()) == (200, {"recebido": True})

@@ -2,9 +2,13 @@ import hashlib
 import hmac
 from typing import Literal
 
+from bson import ObjectId
 from flask import Blueprint, current_app, request
 from pydantic import AwareDatetime, BaseModel, Field
+from pymongo.errors import DuplicateKeyError
 
+from feira.banco import banco
+from feira.catalogo import devolver_unidades
 from feira.erros import ErroApi, validar_corpo
 
 rotas = Blueprint("webhooks", __name__)
@@ -25,8 +29,32 @@ def exigir_assinatura_valida() -> None:
         raise ErroApi(401, "nao_autorizado", "Assinatura do webhook ausente ou inválida.")
 
 
+def registrar_evento(evento: EventoDePagamento) -> bool:
+    try:
+        banco().eventos.insert_one(
+            {"_id": evento.evento_id, **evento.model_dump(exclude={"evento_id"})}
+        )
+    except DuplicateKeyError:
+        return False
+    return True
+
+
+def aplicar_evento(evento: EventoDePagamento) -> None:
+    if not ObjectId.is_valid(evento.pedido_id):
+        return
+    filtro = {"_id": ObjectId(evento.pedido_id), "status": "aguardando_pagamento"}
+    if evento.tipo == "pago":
+        banco().pedidos.update_one(
+            filtro, {"$set": {"status": "pago", "pago_em": evento.ocorrido_em}}
+        )
+    elif pedido := banco().pedidos.find_one_and_update(filtro, {"$set": {"status": "cancelado"}}):
+        devolver_unidades(pedido["linhas"])
+
+
 @rotas.post("/v1/webhooks/pagamento")
 def receber_pagamento():
     exigir_assinatura_valida()
-    validar_corpo(EventoDePagamento)
+    evento = validar_corpo(EventoDePagamento)
+    if registrar_evento(evento):
+        aplicar_evento(evento)
     return {"recebido": True}
