@@ -24,7 +24,7 @@ class EventoDePagamento(BaseModel):
 def exigir_assinatura_valida() -> None:
     segredo = current_app.config["WEBHOOK_SEGREDO"]
     esperada = hmac.new(segredo.encode(), request.get_data(), hashlib.sha256).hexdigest()
-    recebida = request.headers.get("X-Assinatura", "")
+    recebida = request.headers.get("X-Assinatura", "").lower()
     if not segredo or not hmac.compare_digest(esperada.encode(), recebida.encode()):
         raise ErroApi(401, "nao_autorizado", "Assinatura do webhook ausente ou inválida.")
 

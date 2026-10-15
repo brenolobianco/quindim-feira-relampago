@@ -147,3 +147,9 @@ def test_vetor_do_contrato_sem_content_type_tambem_e_aceito(cliente):
     )
 
     assert (resposta.status_code, resposta.get_json()) == (200, {"recebido": True})
+
+
+def test_assinatura_em_hexadecimal_maiusculo_tambem_vale(cliente):
+    resposta = enviar(cliente, CORPO_DO_EXEMPLO, ASSINATURA_DO_EXEMPLO.upper())
+
+    assert resposta.status_code == 200
